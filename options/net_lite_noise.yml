@@ -1,7 +1,7 @@
 # general settings
-name: train_RealESRNetx2plus_1000k_B12G4
+name: net_lite_noise
 model_type: RealESRNetModel
-scale: 2
+scale: 4
 num_gpu: auto  # auto: can infer from your visible devices automatically. official: 4 GPUs
 manual_seed: 0
 
@@ -33,10 +33,10 @@ queue_size: 180
 # dataset and data loader settings
 datasets:
   train:
-    name: DF2K+OST
+    name: 2K
     type: RealESRGANDataset
-    dataroot_gt: datasets/DF2K
-    meta_info: datasets/DF2K/meta_info/meta_info_DF2Kmultiscale+OST_sub.txt
+    dataroot_gt: datasets/2K
+    meta_info: datasets/2K/meta_info/meta_info_2K.txt
     io_backend:
       type: disk
 
@@ -64,9 +64,9 @@ datasets:
 
     # data loader
     use_shuffle: true
-    num_worker_per_gpu: 5
-    batch_size_per_gpu: 12
-    dataset_enlarge_ratio: 1
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 2
+    dataset_enlarge_ratio: 8
     prefetch_mode: ~
 
   # Uncomment these for validation
@@ -80,19 +80,14 @@ datasets:
 
 # network structures
 network_g:
-  type: RRDBNet
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 64
-  num_block: 23
-  num_grow_ch: 32
-  scale: 2
+  type: LiteSRNet
+  use_noise: true
 
 # path
 path:
-  pretrain_network_g: experiments/pretrained_models/RealESRGAN_x4plus.pth
+  # pretrain_network_g: experiments/pretrained_models/ESRGAN_SRx4_DF2KOST_official-ff704c30.pth
   param_key_g: params_ema
-  strict_load_g: False
+  strict_load_g: true
   resume_state: ~
 
 # training settings
@@ -106,10 +101,10 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [100000]
+    milestones: [200]
     gamma: 0.5
 
-  total_iter: 100000
+  total_iter: 200
   warmup_iter: -1  # no warm up
 
   # losses
