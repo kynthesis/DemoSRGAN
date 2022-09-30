@@ -13,7 +13,7 @@ from torch.nn import functional as F
 
 @MODEL_REGISTRY.register()
 class StarSRGANModel(SRGANModel):
-    """RealESRGAN Model for Real-ESRGAN: Training Real-World Blind Super-Resolution with Pure Synthetic Data.
+    """StarSRGAN Model for StarSRGAN.
 
     It mainly performs:
     1. randomly synthesize LQ images in GPU tensors
@@ -215,15 +215,32 @@ class StarSRGANModel(SRGANModel):
                 l_g_pix = self.cri_pix(self.output, l1_gt)
                 l_g_total += l_g_pix
                 loss_dict['l_g_pix'] = l_g_pix
-            # perceptual loss
+
+            # # start: normal perceptual loss
+            # if self.cri_perceptual:
+            #     l_g_percep, l_g_style = self.cri_perceptual(self.output, percep_gt)
+            #     if l_g_percep is not None:
+            #         l_g_total += l_g_percep
+            #         loss_dict['l_g_percep'] = l_g_percep
+            #     if l_g_style is not None:
+            #         l_g_total += l_g_style
+            #         loss_dict['l_g_style'] = l_g_style
+            # # end: normal perceptual loss
+
+            # start: dual perceptual loss
             if self.cri_perceptual:
-                l_g_percep, l_g_style = self.cri_perceptual(self.output, percep_gt)
+                l_g_percep, l_g_style, l_resnet, l_vgg = self.cri_perceptual(self.output, percep_gt)
                 if l_g_percep is not None:
                     l_g_total += l_g_percep
                     loss_dict['l_g_percep'] = l_g_percep
                 if l_g_style is not None:
                     l_g_total += l_g_style
                     loss_dict['l_g_style'] = l_g_style
+                if l_resnet is not None:
+                    loss_dict['l_g_resnet'] = l_resnet
+                if l_vgg is not None:
+                    loss_dict['l_g_vgg'] = l_vgg
+            # end: dual perceptual loss
 
             # # start: normal gan loss
             # fake_g_pred = self.net_d(self.output)
