@@ -217,13 +217,18 @@ class StarSRGANModel(SRGANModel):
                 loss_dict['l_g_pix'] = l_g_pix
             # perceptual loss
             if self.cri_perceptual:
-                l_g_percep, l_g_style = self.cri_perceptual(self.output, percep_gt)
+                l_g_percep, l_g_style, l_resnet, l_vgg = self.cri_perceptual(self.output, percep_gt)
                 if l_g_percep is not None:
                     l_g_total += l_g_percep
                     loss_dict['l_g_percep'] = l_g_percep
                 if l_g_style is not None:
                     l_g_total += l_g_style
                     loss_dict['l_g_style'] = l_g_style
+                if l_resnet is not None:
+                    loss_dict['l_g_resnet'] = l_resnet
+                if l_vgg is not None:
+                    loss_dict['l_g_vgg'] = l_vgg
+
             # gan loss
             fake_g_preds = self.net_d(self.output)
             loss_dict['l_g_gan'] = 0

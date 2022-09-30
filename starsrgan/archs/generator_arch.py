@@ -22,23 +22,22 @@ class GaussianNoise(nn.Module):
         return x
 
 
-def get_activation_function(act_type='mish', num_feat=64, negative_slope=0.1, inplace=True):
+def get_activation_function(act_type='relu', num_feat=64, negative_slope=0.1, inplace=True):
     if act_type == 'relu':
-        activation = nn.ReLU(inplace)
+        return nn.ReLU(inplace)
     elif act_type == 'prelu':
-        activation = nn.PReLU(num_feat)
+        return nn.PReLU(num_feat)
     elif act_type == 'leakyrelu':
-        activation = nn.LeakyReLU(negative_slope, inplace)
+        return nn.LeakyReLU(negative_slope, inplace)
     elif act_type == 'mish':
-        activation = nn.Mish(inplace)
-    return activation
+        return nn.Mish(inplace)
 
 
 def conv1x1(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 
-class ResidualDenseBlock(nn.Module):
+class StarResidualDenseBlock(nn.Module):
     """Residual Dense Block.
 
     Used in RRDB block in ESRGAN.
@@ -46,11 +45,13 @@ class ResidualDenseBlock(nn.Module):
     Args:
         num_feat (int): Channel number of intermediate features.
         num_grow_ch (int): Channels for each growth.
+        act_type (str): Activation type, options: 'relu', 'prelu', 'leakyrelu'. Default: leakyrelu.
+        use_noise (bool): Inject Gaussian noise. Default: True.
     """
 
-    def __init__(self, num_feat=64, num_grow_ch=32, act_type='mish'):
-        super(ResidualDenseBlock, self).__init__()
-        self.noise = GaussianNoise()
+    def __init__(self, num_feat=64, num_grow_ch=32, act_type='leakyrelu', use_noise=True):
+        super(StarResidualDenseBlock, self).__init__()
+        self.noise = GaussianNoise() if use_noise else nn.Identity()
         self.conv1x1 = conv1x1(num_feat, num_grow_ch)
         self.conv1 = nn.Conv2d(num_feat, num_grow_ch, 3, 1, 1)
         self.conv2 = nn.Conv2d(num_feat + num_grow_ch, num_grow_ch, 3, 1, 1)
@@ -75,7 +76,7 @@ class ResidualDenseBlock(nn.Module):
         return self.noise(x5 * 0.2 + x)
 
 
-class RRDB(nn.Module):
+class StarRRDB(nn.Module):
     """Residual in Residual Dense Block.
 
     Used in RRDB-Net in ESRGAN.
@@ -83,13 +84,15 @@ class RRDB(nn.Module):
     Args:
         num_feat (int): Channel number of intermediate features.
         num_grow_ch (int): Channels for each growth.
+        act_type (str): Activation type, options: 'relu', 'prelu', 'leakyrelu'. Default: leakyrelu.
+        use_noise (bool): Inject Gaussian noise. Default: True.
     """
 
-    def __init__(self, num_feat=64, num_grow_ch=32, act_type='mish'):
-        super(RRDB, self).__init__()
-        self.rdb1 = ResidualDenseBlock(num_feat, num_grow_ch, act_type)
-        self.rdb2 = ResidualDenseBlock(num_feat, num_grow_ch, act_type)
-        self.rdb3 = ResidualDenseBlock(num_feat, num_grow_ch, act_type)
+    def __init__(self, num_feat=64, num_grow_ch=32, act_type='leakyrelu', use_noise=True):
+        super(StarRRDB, self).__init__()
+        self.rdb1 = StarResidualDenseBlock(num_feat, num_grow_ch, act_type, use_noise)
+        self.rdb2 = StarResidualDenseBlock(num_feat, num_grow_ch, act_type, use_noise)
+        self.rdb3 = StarResidualDenseBlock(num_feat, num_grow_ch, act_type, use_noise)
 
     def forward(self, x):
         out = self.rdb1(x)
@@ -101,15 +104,7 @@ class RRDB(nn.Module):
 
 @ARCH_REGISTRY.register()
 class StarSRNet(nn.Module):
-    """Networks consisting of Residual in Residual Dense Block, which is used
-    in ESRGAN.
-
-    ESRGAN: Enhanced Super-Resolution Generative Adversarial Networks.
-
-    We extend ESRGAN for scale x2 and scale x1.
-    Note: This is one option for scale 1, scale 2 in RRDBNet.
-    We first employ the pixel-unshuffle (an inverse operation of pixelshuffle to reduce the spatial size
-    and enlarge the channel size before feeding inputs into the main ESRGAN architecture.
+    """StarSRGAN: Synthetic Technical Accelerated Receptive Super-Resolution Generative Adversarial Networks.
 
     Args:
         num_in_ch (int): Channel number of inputs.
@@ -118,9 +113,19 @@ class StarSRNet(nn.Module):
             Default: 64
         num_block (int): Block number in the trunk network. Defaults: 23
         num_grow_ch (int): Channels for each growth. Default: 32.
+        act_type (str): Activation type, options: 'relu', 'prelu', 'leakyrelu'. Default: leakyrelu.
+        use_noise (bool): Inject Gaussian noise. Default: True.
     """
 
-    def __init__(self, num_in_ch, num_out_ch, scale=4, num_feat=64, num_block=23, num_grow_ch=32, act_type='mish'):
+    def __init__(self,
+                 num_in_ch=3,
+                 num_out_ch=3,
+                 scale=4,
+                 num_feat=64,
+                 num_block=23,
+                 num_grow_ch=32,
+                 act_type='leakyrelu',
+                 use_noise=True):
         super(StarSRNet, self).__init__()
         self.scale = scale
         if scale == 2:
@@ -128,7 +133,8 @@ class StarSRNet(nn.Module):
         elif scale == 1:
             num_in_ch = num_in_ch * 16
         self.conv_first = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1)
-        self.body = make_layer(RRDB, num_block, num_feat=num_feat, num_grow_ch=num_grow_ch, act_type=act_type)
+        self.body = make_layer(
+            StarRRDB, num_block, num_feat=num_feat, num_grow_ch=num_grow_ch, act_type=act_type, use_noise=use_noise)
         self.conv_body = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
         # upsample
         self.conv_up1 = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
@@ -156,11 +162,8 @@ class StarSRNet(nn.Module):
 
 
 @ARCH_REGISTRY.register()
-class StarSRNetLite(nn.Module):
-    """A compact VGG-style network structure for super-resolution.
-
-    It is a compact network structure, which performs upsampling in the last layer and no convolution is
-    conducted on the HR feature space.
+class LiteSRNet(nn.Module):
+    """LiteSRGAN: Lightweight Interpolative Temporal Efficient Super-Resolution Generative Adversarial Networks.
 
     Args:
         num_in_ch (int): Channel number of inputs. Default: 3.
@@ -168,18 +171,28 @@ class StarSRNetLite(nn.Module):
         num_feat (int): Channel number of intermediate features. Default: 64.
         num_conv (int): Number of convolution layers in the body network. Default: 16.
         upscale (int): Upsampling factor. Default: 4.
-        act_type (str): Activation type, options: 'relu', 'prelu', 'leakyrelu', 'mish'. Default: mish.
+        act_type (str): Activation type, options: 'relu', 'prelu', 'leakyrelu'. Default: prelu.
+        use_noise (bool): Inject Gaussian noise. Default: True.
     """
 
-    def __init__(self, num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='mish'):
-        super(StarSRNetLite, self).__init__()
+    def __init__(self,
+                 num_in_ch=3,
+                 num_out_ch=3,
+                 num_feat=64,
+                 num_conv=16,
+                 upscale=4,
+                 act_type='prelu',
+                 use_noise=True):
+        super(LiteSRNet, self).__init__()
         self.num_in_ch = num_in_ch
         self.num_out_ch = num_out_ch
         self.num_feat = num_feat
         self.num_conv = num_conv
         self.upscale = upscale
         self.act_type = act_type
+        self.use_noise = use_noise
 
+        self.noise = GaussianNoise() if use_noise else nn.Identity()
         self.body = nn.ModuleList()
         # the first conv
         self.body.append(nn.Conv2d(num_in_ch, num_feat, 3, 1, 1))
@@ -206,4 +219,4 @@ class StarSRNetLite(nn.Module):
         # add the nearest upsampled image, so that the network learns the residual
         base = F.interpolate(x, scale_factor=self.upscale, mode='nearest')
         out += base
-        return out
+        return self.noise(out)
