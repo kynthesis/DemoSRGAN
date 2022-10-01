@@ -252,7 +252,6 @@ class StarSRGANDataset(data.Dataset):
             'sinc_kernel': kernel_sinc_info,
             'gt_path': gt_path
         }
-        # return_d = {'gt': img_gt, 'kernel1': kernel_info, 'kernel2': kernel2_info, 'sinc_kernel': kernel_sinc_info, 'gt_path': gt_path}
 
         kernel_info = {}
 
@@ -320,8 +319,6 @@ class StarSRGANDataset(data.Dataset):
 
         return_d['weak_degrade_one_stage'] = {'gt': img_gt, 'kernel1': kernel_info, 'gt_path': gt_path}
         # end: additional adaptive degradation code (DASR)
-
-        # return_d = {'gt': img_gt, 'kernel1': kernel, 'kernel2': kernel2, 'sinc_kernel': sinc_kernel, 'gt_path': gt_path}
 
         return return_d
 
