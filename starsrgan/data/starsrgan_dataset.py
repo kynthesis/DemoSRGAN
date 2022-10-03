@@ -55,6 +55,7 @@ class StarSRGANDataset(data.Dataset):
 
         # blur settings for the first degradation
         self.blur_kernel_size = opt['blur_kernel_size']
+        self.blur_kernel_size_minimum = opt['blur_kernel_size_minimum']
         self.kernel_list = opt['kernel_list']
         self.kernel_prob = opt['kernel_prob']  # a list for each kernel probability
         self.blur_sigma = opt['blur_sigma']
@@ -236,8 +237,7 @@ class StarSRGANDataset(data.Dataset):
             sinc_kernel = self.pulse_tensor2  # DASR
             kernel_sinc_info = {'kernel': sinc_kernel, 'kernel_size': 0, 'omega_c': 0}  # DASR
 
-        # BGR to RGB, HWC to CHW, numpy to tensor
-        img_gt = img2tensor([img_gt], bgr2rgb=True, float32=True)[0]
+        # numpy to tensor
         kernel = torch.FloatTensor(kernel)
         kernel2 = torch.FloatTensor(kernel2)
 
