@@ -2,13 +2,12 @@ import argparse
 import cv2
 import glob
 import os
-from basicsr.archs.rrdbnet_arch import RRDBNet
-from basicsr.utils.download_util import load_file_from_url
+# from basicsr.archs.rrdbnet_arch import RRDBNet
 
 from realesrgan import RealESRGANer
-from realesrgan.archs.srvgg_arch import SRVGGNetCompact
 
 from starsrgan.archs.generator_arch import StarSRNet
+# from starsrgan.archs.generator_arch import LiteSRNet
 
 
 def main():
@@ -98,6 +97,19 @@ def main():
     else:
         paths = sorted(glob.glob(os.path.join(args.input, '*')))
 
+    # measure inference time
+    import torch
+    import numpy as np
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    dummy_input = torch.randn(1, 3, 64, 64, dtype=torch.float16).to(device)
+    starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+    repetitions = len(paths)
+    timings = np.zeros((repetitions, 1))
+
+    # warm-up GPU
+    for _ in range(100):
+        _ = model(dummy_input)
+
     for idx, path in enumerate(paths):
         imgname, extension = os.path.splitext(os.path.basename(path))
         print('Testing', idx, imgname)
@@ -112,7 +124,12 @@ def main():
             if args.face_enhance:
                 _, _, output = face_enhancer.enhance(img, has_aligned=False, only_center_face=False, paste_back=True)
             else:
+                starter.record()
                 output, _ = upsampler.enhance(img, outscale=args.outscale)
+                ender.record()
+                torch.cuda.synchronize()
+                curr_time = starter.elapsed_time(ender)
+                timings[idx] = curr_time
         except RuntimeError as error:
             print('Error', error)
             print('If you encounter CUDA out of memory, try to set --tile with a smaller number.')
@@ -128,6 +145,9 @@ def main():
             else:
                 save_path = os.path.join(args.output, f'{imgname}_{args.suffix}.{extension}')
             cv2.imwrite(save_path, output)
+
+    mean_syn = np.sum(timings) / repetitions
+    print(str(round(1000 / mean_syn, 2)) + ' FPS')
 
 
 if __name__ == '__main__':
