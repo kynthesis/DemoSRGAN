@@ -1,5 +1,5 @@
 # general settings
-name: net_star
+name: net_lite
 model_type: RealESRNetModel
 scale: 4
 num_gpu: auto  # auto: can infer from your visible devices automatically. official: 4 GPUs
@@ -80,7 +80,7 @@ datasets:
 
 # network structures
 network_g:
-  type: StarSRNet
+  type: LiteSRNet
 
 # path
 path:

@@ -36,10 +36,10 @@ queue_size: 180
 # dataset and data loader settings
 datasets:
   train:
-    name: Tiger
+    name: Library
     type: RealESRGANDataset
-    dataroot_gt: datasets/Tiger
-    meta_info: datasets/Tiger/meta_info/meta_info_Tiger.txt
+    dataroot_gt: datasets/Library
+    meta_info: datasets/Library/meta_info/meta_info_Library.txt
     io_backend:
       type: disk
 
