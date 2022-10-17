@@ -19,7 +19,7 @@ def main(args):
         width, height = img.size
         for idx, scale in enumerate(scale_list):
             print(f'\t{scale:.2f}')
-            rlt = img.resize((int(width * scale), int(height * scale)), resample=Image.LANCZOS)
+            rlt = img.resize((int(width * scale), int(height * scale)), resample=Image.Resampling.LANCZOS)
             rlt.save(os.path.join(args.output, f'{basename}T{idx}.png'))
 
         # save the smallest image which the shortest edge is 400
@@ -31,7 +31,7 @@ def main(args):
             ratio = width / height
             height = shortest_edge
             width = int(height * ratio)
-        rlt = img.resize((int(width), int(height)), resample=Image.LANCZOS)
+        rlt = img.resize((int(width), int(height)), resample=Image.Resampling.LANCZOS)
         rlt.save(os.path.join(args.output, f'{basename}T{idx+1}.png'))
 
 
