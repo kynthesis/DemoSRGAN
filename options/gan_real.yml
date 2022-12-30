@@ -36,10 +36,10 @@ queue_size: 180
 # dataset and data loader settings
 datasets:
   train:
-    name: Library
+    name: Baboon
     type: RealESRGANDataset
-    dataroot_gt: datasets/Library
-    meta_info: datasets/Library/meta_info/meta_info_Library.txt
+    dataroot_gt: datasets/Baboon
+    meta_info: datasets/Baboon/meta_info/meta_info_Baboon_multiscale.txt
     io_backend:
       type: disk
 
@@ -117,10 +117,10 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [10000]
+    milestones: [3500]
     gamma: 0.5
 
-  total_iter: 10000
+  total_iter: 3500
   warmup_iter: -1  # no warm up
 
   # losses

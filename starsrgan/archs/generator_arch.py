@@ -85,7 +85,7 @@ class StarSRNet(nn.Module):
         num_grow_ch (int): Channels for each growth. Default: 32.
     """
 
-    def __init__(self, num_in_ch=3, num_out_ch=3, scale=4, num_feat=64, num_block=23, num_grow_ch=32):
+    def __init__(self, num_in_ch=3, num_out_ch=3, scale=4, num_feat=64, num_block=23, num_grow_ch=32, drop_out=False):
         super(StarSRNet, self).__init__()
         self.scale = scale
         if scale == 2:
@@ -93,6 +93,7 @@ class StarSRNet(nn.Module):
         elif scale == 1:
             num_in_ch = num_in_ch * 16
         self.conv_first = nn.Conv2d(num_in_ch, num_feat, 3, 1, 1)
+        self.dropout = nn.Dropout2d(p=0.5) if drop_out else nn.Identity()
         self.body = make_layer(StarRRDB, num_block, num_feat=num_feat, num_grow_ch=num_grow_ch)
         self.conv_body = nn.Conv2d(num_feat, num_feat, 3, 1, 1)
         # upsample
@@ -116,7 +117,9 @@ class StarSRNet(nn.Module):
         # upsample
         feat = self.lrelu(self.conv_up1(F.interpolate(feat, scale_factor=2, mode='nearest')))
         feat = self.lrelu(self.conv_up2(F.interpolate(feat, scale_factor=2, mode='nearest')))
-        out = self.conv_last(self.lrelu(self.conv_hr(feat)))
+        feat = self.lrelu(self.conv_hr(feat))
+        feat = self.dropout(feat)
+        out = self.conv_last(feat)
         return out
 
 
@@ -136,7 +139,14 @@ class LiteSRNet(nn.Module):
         act_type (str): Activation type, options: 'relu', 'prelu', 'leakyrelu'. Default: prelu.
     """
 
-    def __init__(self, num_in_ch=3, num_out_ch=3, num_feat=64, num_conv=16, upscale=4, act_type='prelu'):
+    def __init__(self,
+                 num_in_ch=3,
+                 num_out_ch=3,
+                 num_feat=64,
+                 num_conv=16,
+                 upscale=4,
+                 act_type='prelu',
+                 drop_out=False):
         super(LiteSRNet, self).__init__()
         self.num_in_ch = num_in_ch
         self.num_out_ch = num_out_ch
@@ -168,6 +178,10 @@ class LiteSRNet(nn.Module):
             elif act_type == 'leakyrelu':
                 activation = nn.LeakyReLU(negative_slope=0.1, inplace=True)
             self.body.append(activation)
+
+        # drop out
+        if drop_out:
+            self.body.append(nn.Dropout2d(p=0.7))
 
         # the last conv
         self.body.append(nn.Conv2d(num_feat, num_out_ch * upscale * upscale, 3, 1, 1))

@@ -2,7 +2,7 @@ import argparse
 import cv2
 import glob
 import os
-# from basicsr.archs.rrdbnet_arch import RRDBNet
+from basicsr.archs.rrdbnet_arch import RRDBNet
 
 from realesrgan import RealESRGANer
 
@@ -57,7 +57,7 @@ def main():
 
     # determine models according to model names
     args.model_name = args.model_name.split('.')[0]
-    model = StarSRNet()
+    model = RRDBNet(3, 3)
     netscale = 4
 
     # determine model paths
