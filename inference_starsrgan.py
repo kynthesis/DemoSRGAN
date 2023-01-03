@@ -7,7 +7,7 @@ from basicsr.archs.rrdbnet_arch import RRDBNet
 from realesrgan import RealESRGANer
 
 from starsrgan.archs.generator_arch import StarSRNet
-# from starsrgan.archs.generator_arch import LiteSRNet
+from starsrgan.archs.generator_arch import LiteSRNet
 
 
 def main():
@@ -57,7 +57,7 @@ def main():
 
     # determine models according to model names
     args.model_name = args.model_name.split('.')[0]
-    model = RRDBNet(3, 3)
+    model = LiteSRNet(drop_out=True)
     netscale = 4
 
     # determine model paths

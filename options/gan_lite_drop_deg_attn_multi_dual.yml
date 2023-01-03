@@ -1,6 +1,6 @@
 # general settings
-name: gan_lite_deg_attn
-model_type: StarSRGANModel
+name: gan_lite_drop_deg_attn_multi_dual
+model_type: MultiDualStarSRGANModel
 scale: 4
 num_gpu: auto  # auto: can infer from your visible devices automatically. official: 4 GPUs
 manual_seed: 0
@@ -57,10 +57,10 @@ queue_size: 180
 # dataset and data loader settings
 datasets:
   train:
-    name: Library
+    name: Lenna
     type: StarSRGANDataset
-    dataroot_gt: datasets/Library
-    meta_info: datasets/Library/meta_info/meta_info_Library.txt
+    dataroot_gt: datasets/Barbara
+    meta_info: datasets/Barbara/meta_info/meta_info_Barbara_multiscale.txt
     io_backend:
       type: disk
 
@@ -125,14 +125,15 @@ datasets:
 # network structures
 network_g:
   type: LiteSRNet
+  drop_out: true
 
 network_d:
-  type: AttentionUNetDiscriminator
+  type: MultiscaleAttentionUNetDiscriminator
 
 # path
 path:
   # use the pre-trained Real-ESRNet model
-  pretrain_network_g: experiments/net_lite_deg/models/net_g_latest.pth
+  pretrain_network_g: experiments/net_lite_drop_deg/models/net_g_latest.pth
   param_key_g: params_ema
   strict_load_g: true
   resume_state: ~
@@ -166,7 +167,7 @@ train:
     reduction: mean
   # perceptual loss (content and style losses)
   perceptual_opt:
-    type: PerceptualLoss
+    type: DualPerceptualLoss
     layer_weights:
       # before relu
       'conv1_2': 0.1

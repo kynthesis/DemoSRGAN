@@ -154,7 +154,7 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [10000]
+    milestones: [20000]
     gamma: 0.5
 
   total_iter: 100
