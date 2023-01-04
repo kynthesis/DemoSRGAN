@@ -33,10 +33,10 @@ queue_size: 180
 # dataset and data loader settings
 datasets:
   train:
-    name: Lenna
+    name: Flowers
     type: RealESRGANDataset
-    dataroot_gt: datasets/Barbara
-    meta_info: datasets/Barbara/meta_info/meta_info_Barbara_multiscale.txt
+    dataroot_gt: datasets/Flowers
+    meta_info: datasets/Flowers/meta_info/meta_info_Flowers_multiscale.txt
     io_backend:
       type: disk
 
